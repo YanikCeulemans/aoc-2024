@@ -63,8 +63,6 @@ mod DayTwo {
 
         def findUnsafeLevelIndexWithState(state: State, ys: List[Int32]): State =
             match ys {
-                case Nil => state
-                case _ :: Nil => state
                 case first :: second :: rest =>
                     let diffIsValid = DayTwo.diffIsValid(first, second);
                     let comparisonIsSame = Order.compare(first, second) == state#comparison;
@@ -80,6 +78,7 @@ mod DayTwo {
                             | state
                         }
                     }
+                case _ => state
             }
 
         def findUnsafeLevelIndex(xs: List[Int32]) : Option[Int32] =
@@ -99,7 +98,7 @@ mod DayTwo {
             }
         
         def analyseReport(report: List[Int32]): Bool =
-            match findUnsafeLevelIndex((report)) {
+            match findUnsafeLevelIndex(report) {
                 case None => true
                 case Some(unsafeIndex) =>
                     List#{
