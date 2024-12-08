@@ -16,7 +16,7 @@ mod DayTwo {
         0 < diff and diff <= 3
     }
 
-    pub def rmAt(index: Int32, xs: List[a]): List[a] =
+    def rmAt(index: Int32, xs: List[a]): List[a] =
         let (left, right) = List.splitAt(index, xs);
         left ++ List.drop(1, right)
 
@@ -60,62 +60,57 @@ mod DayTwo {
             index = Int32,
             unsafeLevelIndex = Option[Int32]
         }
+
+        def findUnsafeLevelIndexWithState(state: State, ys: List[Int32]): State =
+            match ys {
+                case Nil => state
+                case _ :: Nil => state
+                case first :: second :: rest =>
+                    let diffIsValid = DayTwo.diffIsValid(first, second);
+                    let comparisonIsSame = Order.compare(first, second) == state#comparison;
+                    if (diffIsValid and comparisonIsSame) {
+                        let newState = {
+                            index = state#index + 1
+                            | state
+                        };
+                        findUnsafeLevelIndexWithState(newState, second :: rest)
+                    } else {
+                        {
+                            unsafeLevelIndex = Some(state#index)
+                            | state
+                        }
+                    }
+            }
+
+        def findUnsafeLevelIndex(xs: List[Int32]) : Option[Int32] =
+            match xs {
+                case first :: second :: rest =>
+                    let diffIsValid = DayTwo.diffIsValid(first, second);
+                    if (not(diffIsValid)) Some(0)
+                    else {
+                        let state = {
+                            comparison = Order.compare(first, second),
+                            index = 1,
+                            unsafeLevelIndex = None
+                        };
+                        findUnsafeLevelIndexWithState(state, second :: rest)#unsafeLevelIndex
+                    }
+                case _ => None
+            }
         
         def analyseReport(report: List[Int32]): Bool =
-            def findUnsafeLevelIndex(xs: List[Int32]) : Option[Int32] = {
-                def go(state: State, ys: List[Int32]): State = 
-                    match ys {
-                        case Nil => state
-                        case _ :: Nil => state
-                        case first :: second :: rest =>
-                            let diffIsValid = DayTwo.diffIsValid(first, second);
-                            let comparisonIsSame = Order.compare(first, second) == state#comparison;
-                            if (diffIsValid and comparisonIsSame) {
-                                let newState = {
-                                    index = state#index + 1
-                                    | state
-                                };
-                                go(newState, second :: rest)
-                            } else {
-                                {
-                                    unsafeLevelIndex = Some(state#index)
-                                    | state
-                                }
-                            }
-                    };
-
-                match xs {
-                    case first :: second :: rest =>
-                        let diffIsValid = DayTwo.diffIsValid(first, second);
-                        if (not(diffIsValid)) Some(0)
-                        else {
-                            let state = {
-                                comparison = Order.compare(first, second),
-                                index = 1,
-                                unsafeLevelIndex = None
-                            };
-                            go(state, second :: rest)#unsafeLevelIndex
-                        }
-                    case _ => None
-                }
-            };
-
             match findUnsafeLevelIndex((report)) {
                 case None => true
                 case Some(unsafeIndex) =>
-                    let dampenedFirst =
+                    List#{
                         DayTwo.rmAt(0, report) |>
-                        findUnsafeLevelIndex;
-                    let dampenedLeft =
+                        findUnsafeLevelIndex,
                         DayTwo.rmAt(unsafeIndex, report) |>
-                        findUnsafeLevelIndex;
-                    let dampenedRight =
+                        findUnsafeLevelIndex,
                         DayTwo.rmAt(unsafeIndex + 1, report) |>
-                        findUnsafeLevelIndex;
-                    match (dampenedFirst, dampenedLeft, dampenedRight) {
-                        case (Some(_), Some(_), Some(_)) => false
-                        case _ => true
-                    }
+                        findUnsafeLevelIndex
+                    } |> 
+                    List.exists(Option.isEmpty)
             }
 
         pub def app(filename: String): Int32 \ {FileReadWithResult} =
