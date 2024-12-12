@@ -18,7 +18,7 @@ mod Diagnostics {
 
 def main(): Unit \ IO =
     let mark = System.nanoTime();
-    App.runAll(() -> DayFour.PartOne.app("four-sample.txt")) |>
+    App.runAll(() -> DayFour.PartTwo.app("four.txt")) |>
     println;
     let elapsed = Diagnostics.getElapsedTime(TimeUnit.Milliseconds, mark);
     println("total time: ${elapsed}ms")
