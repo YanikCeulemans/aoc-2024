@@ -4,4 +4,6 @@ mod Common {
             case Err(IoError.IoError(kind, msg)) => bug!("${kind}: ${msg}")
             case Ok(lines) => lines
         }
+    
+    pub def isEven(n: Int32): Bool = n == ((n / 2) * 2)
 }

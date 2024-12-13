@@ -47,15 +47,9 @@ mod DayFive {
                     match pageNumbers {
                         case Nil => acc
                         case hd :: tail => 
-                            help(
-                                acc and 
-                                    PageOrderingRules.isUpdatePageNumberCorrect(
-                                        hd,
-                                        tail,
-                                        pageOrderingRules
-                                    ),
-                                tail
-                            )
+                            let pageNumberIsCorrect =
+                                PageOrderingRules.isUpdatePageNumberCorrect(hd, tail, pageOrderingRules);
+                            help(acc and pageNumberIsCorrect, tail)
                     };
 
                 let Update(pageNumbers) = update;
@@ -66,13 +60,16 @@ mod DayFive {
 
             pub def getMiddle(update: Update): Option[String] =
                 let Update(pageNumbers) = update;
-                let middleIndex = List.length(pageNumbers) / 2;
-                List.zipWithIndex(pageNumbers) |>
-                List.find(fst >> Eq.eq(middleIndex)) |>
-                Option.map(snd)
+                let pageNumbersLength = List.length(pageNumbers);
+                if (Common.isEven(pageNumbersLength)) None
+                else
+                    let middleIndex = pageNumbersLength / 2;
+                    List.zipWithIndex(pageNumbers) |>
+                    List.find(fst >> Eq.eq(middleIndex)) |>
+                    Option.map(snd)
         }
 
-        pub def app(filename: String): Int32 \ {FileReadWithResult, Logger} =
+        pub def app(filename: String): Int32 \ {FileReadWithResult} =
             let (pageOrderingRuleLines, updateLines) =
                 Common.readAllLinesOrCrash(filename) |>
                 List.span(String.nonEmpty) |>
@@ -85,29 +82,9 @@ mod DayFive {
             let parsedPageOrderingRules =
                 PageOrderingRules.ofList(pageOrderingRuleLines);
 
-            let parsedUpdates =
-                List.map(Update.parse, updateLines)
-                ;
-            let () =
-                Logger.debug("parsed page ordering rules:${
-                    String.lineSeparator()
-                }${
-                    parsedPageOrderingRules
-                }");
-            let () =
-                Logger.debug("parsed updates:${
-                    String.lineSeparator()
-                }${
-                    parsedUpdates |>
-                    List.map(ToString.toString) |>
-                    String.intercalate(String.lineSeparator())
-                }");
-
-            parsedUpdates |>
-            List.filter(Update.isInCorrectOrder(parsedPageOrderingRules)) !>
-            (x -> Logger.debug("correctly ordered: ${x}")) |>
-            List.filterMap(Update.getMiddle) !>
-            (x -> Logger.debug("middle number: ${x}")) |>
+            List.map(Update.parse, updateLines) |>
+            List.filter(Update.isInCorrectOrder(parsedPageOrderingRules)) |>
+            List.filterMap(Update.getMiddle) |>
             List.filterMap(Int32.fromString) |>
             List.sum
     }
