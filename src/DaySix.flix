@@ -1,5 +1,5 @@
 mod DaySix {
-    enum Direction {
+    enum Direction with Eq, Order {
         case North, East, South, West
     }
 
@@ -13,7 +13,7 @@ mod DaySix {
             }
     }
 
-    enum Position(Int32, Int32) with Eq, Order
+    enum Position(Int32, Int32) with Eq, Order, ToString
 
     mod Position {
         use DaySix.Direction
@@ -22,7 +22,7 @@ mod DaySix {
             x >= limit or y >= limit or x < 0 or y < 0
     }
 
-    enum Guard(Direction, Position)
+    enum Guard(Direction, Position) with Eq, Order
 
     mod Guard {
         use DaySix.{ Direction, Position }
@@ -51,6 +51,10 @@ mod DaySix {
         pub def position(guard: Guard): Position =
             let Guard(_, position) = guard;
             position
+
+        pub def direction(guard: Guard): Direction =
+            let Guard(direction, _) = guard;
+            direction
     }
 
     enum FloorPlan({ obstacles = Set[Position], guard = Guard, size = Int32 })
@@ -128,6 +132,35 @@ mod DaySix {
             };
 
             help(List.empty(), plan#guard)
+
+        pub def simulate(floorPlan: FloorPlan): Int32 \ {Diagnostics.GetDiagnosticTimeMark, Logger} =
+            use Diagnostics.{GetDiagnosticTimeMark, getElapsedTime};
+            let FloorPlan(plan) = floorPlan;
+
+            def help(obstacles: Set[Position], visited: Set[Guard], guard: Guard): Bool = {
+                let movedGuard = Guard.move(obstacles, guard);
+                let newPosition = Guard.position(movedGuard);
+                let guardMovedOffGrid = Position.isOutsideOf(plan#size, newPosition);
+                if (guardMovedOffGrid) false
+                else
+                    let loopDetected = Set.memberOf(movedGuard, visited);
+                    if (loopDetected) true
+                    else
+                        help(obstacles, Set.insert(movedGuard, visited), movedGuard)
+            };
+
+            let mark = GetDiagnosticTimeMark.getDiagnosticTimeMark();
+            let simulations: List[Bool] =
+                foreach (i <- List.range(0, plan#size); j <- List.range(0, plan#size))
+                    yield  help(Set.insert(Position.Position(i, j), plan#obstacles), Set#{plan#guard}, plan#guard);
+
+            
+            let result = 
+                simulations
+                |> List.count(identity);
+            let elapsedTime = Diagnostics.getElapsedTime(mark);
+            let () = Logger.debug("simulations elapsed time: ${elapsedTime}");
+            result
     }
 
     mod PartOne {
@@ -139,6 +172,21 @@ mod DaySix {
                     DaySix.FloorPlan.predict >> 
                     List.toSet >> 
                     Set.count(constant(true))
+                );
+
+            match result {
+                case None => bug!("invalid floorplan")
+                case Some(r) => r
+            }
+    }
+
+    mod PartTwo {
+        pub def app(filename: String): Int32 \ {FileReadWithResult, Diagnostics.GetDiagnosticTimeMark, Logger} =
+            let result =
+                Common.readAllLinesOrCrash(filename) |>
+                DaySix.FloorPlan.parse |>
+                Option.map(
+                    DaySix.FloorPlan.simulate
                 );
 
             match result {
