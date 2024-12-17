@@ -60,6 +60,8 @@ mod DaySix {
     enum FloorPlan({ obstacles = Set[Position], guard = Guard, size = Int32 })
 
     mod FloorPlan {
+        use DaySix.FloorPlan.simulateAllMovePositions
+        use DaySix.FloorPlan
         use DaySix.{Position, Guard, Direction}
 
         type alias ParseState = {
@@ -133,7 +135,23 @@ mod DaySix {
 
             help(List.empty(), plan#guard)
 
-        pub def simulate(floorPlan: FloorPlan): Int32 \ {Diagnostics.GetDiagnosticTimeMark, Logger} =
+        pub def simulateAllMovePositions(floorPlan: FloorPlan): Set[Position] = 
+            let FloorPlan.FloorPlan(plan) = floorPlan;
+
+            def help(guard: Guard, visited: Set[Position]): Set[Position] = {
+                let movedGuard = Guard.move(plan#obstacles, guard);
+                let movedGuardPosition = Guard.position(movedGuard);
+
+                let guardMovedOffGrid = Position.isOutsideOf(plan#size, movedGuardPosition);
+                if (guardMovedOffGrid) visited
+                else Set.insert(movedGuardPosition, visited) |> help(movedGuard)
+            };
+            
+            Guard.position(plan#guard) |>
+            Set.singleton |>
+            help(plan#guard)
+
+        pub def simulate(floorPlan: FloorPlan): Int32 =
             use Diagnostics.{GetDiagnosticTimeMark, getElapsedTime};
             let FloorPlan(plan) = floorPlan;
 
@@ -149,17 +167,21 @@ mod DaySix {
                         help(obstacles, Set.insert(movedGuard, visited), movedGuard)
             };
 
-            let mark = GetDiagnosticTimeMark.getDiagnosticTimeMark();
-            let simulations: List[Bool] =
-                foreach (i <- List.range(0, plan#size); j <- List.range(0, plan#size))
-                    yield  help(Set.insert(Position.Position(i, j), plan#obstacles), Set#{plan#guard}, plan#guard);
+            let inFrontOfGuardPosition = 
+                Guard.move(plan#obstacles, plan#guard) |> Guard.position;
+            let positionsToSimulate = 
+                simulateAllMovePositions(floorPlan) |> 
+                Set.remove(inFrontOfGuardPosition);
 
+            let simulations =
+                positionsToSimulate |>
+                Set.toList |>
+                List.map(pos -> Set.insert(pos, plan#obstacles)) |>
+                List.map(obstacles -> help(obstacles, Set#{plan#guard}, plan#guard));
             
             let result = 
                 simulations
                 |> List.count(identity);
-            let elapsedTime = Diagnostics.getElapsedTime(mark);
-            let () = Logger.debug("simulations elapsed time: ${elapsedTime}");
             result
     }
 
@@ -181,7 +203,7 @@ mod DaySix {
     }
 
     mod PartTwo {
-        pub def app(filename: String): Int32 \ {FileReadWithResult, Diagnostics.GetDiagnosticTimeMark, Logger} =
+        pub def app(filename: String): Int32 \ {FileReadWithResult} =
             let result =
                 Common.readAllLinesOrCrash(filename) |>
                 DaySix.FloorPlan.parse |>

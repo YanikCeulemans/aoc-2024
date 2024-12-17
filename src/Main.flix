@@ -14,5 +14,5 @@ def main(): Unit \ IO =
         Logger.handle |>
         Diagnostics.GetDiagnosticTimeMark.handle;
 
-    app("six-sample.txt") |>
+    app("six.txt") |>
     println
