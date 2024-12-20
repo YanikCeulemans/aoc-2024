@@ -1,8 +1,9 @@
-def timedApp(filename: String): Int32 \ {Logger, Diagnostics.GetDiagnosticTimeMark, FileReadWithResult} =
+def timedApp(filename: String): Int64 \ {Logger, Diagnostics.GetDiagnosticTimeMark, FileReadWithResult} =
     use Diagnostics.{GetDiagnosticTimeMark, getElapsedTime};
     
     let mark = GetDiagnosticTimeMark.getDiagnosticTimeMark();
-    let result = DaySix.PartTwo.app(filename);
+    let lines = Common.readAllLinesOrCrash(filename);
+    let result = DaySeven.PartOne.app(lines);
     let elapsedTime = Diagnostics.getElapsedTime(mark);
     let () = Logger.debug("app elapsed time: ${elapsedTime}");
     result
@@ -14,5 +15,5 @@ def main(): Unit \ IO =
         Logger.handle |>
         Diagnostics.GetDiagnosticTimeMark.handle;
 
-    app("six.txt") |>
+    app("seven.txt") |>
     println
