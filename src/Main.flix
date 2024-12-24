@@ -3,7 +3,7 @@ def timedApp(filename: String): Int64 \ {Logger, Diagnostics.GetDiagnosticTimeMa
     
     let mark = GetDiagnosticTimeMark.getDiagnosticTimeMark();
     let lines = Common.readAllLinesOrCrash(filename);
-    let result = DaySeven.PartOne.app(lines);
+    let result = DaySeven.PartTwo.app(lines);
     let elapsedTime = Diagnostics.getElapsedTime(mark);
     let () = Logger.debug("app elapsed time: ${elapsedTime}");
     result

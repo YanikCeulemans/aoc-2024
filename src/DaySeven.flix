@@ -28,6 +28,12 @@ mod DaySeven {
                 }
             )
 
+        def concatNumbers(x: Int64, y: Int64): Int64 =
+            match "${x}${y}" |> Int64.parse(10) {
+                case Ok(res) => res
+                case Err(msg) => bug!("could not concat 2 numbers into a new number: ${msg}")
+            }
+
         pub def canProduceTestValue(equation: Equation): Bool =
             let Equation(eq) = equation;
             
@@ -36,6 +42,21 @@ mod DaySeven {
                 match nums {
                     case first :: second :: rest =>
                         go(acc, first + second :: rest) ::: go(acc, first * second :: rest)
+                    case single :: Nil => single :: acc
+                    case _ => acc
+                };
+            
+            go(List.empty(), eq#numbers) |> 
+            List.memberOf(eq#testValue)
+
+        pub def canProduceTestValueWithConcat(equation: Equation): Bool =
+            let Equation(eq) = equation;
+            
+            // Not tail recursive :(
+            def go(acc: List[Int64], nums: List[Int64]): List[Int64] =
+                match nums {
+                    case first :: second :: rest =>
+                        go(acc, first + second :: rest) ::: go(acc, first * second :: rest) ::: go(acc, concatNumbers(first, second) :: rest)
                     case single :: Nil => single :: acc
                     case _ => acc
                 };
@@ -51,6 +72,17 @@ mod DaySeven {
             lines |>
             List.filterMap(Equation.parse) |>
             List.filter(Equation.canProduceTestValue) |>
+            List.map(Equation.testValue) |>
+            List.fold
+    }
+
+    mod PartTwo {
+        use DaySeven.Equation
+
+        pub def app(lines: List[String]): Int64 =
+            lines |>
+            List.filterMap(Equation.parse) |>
+            List.filter(Equation.canProduceTestValueWithConcat) |>
             List.map(Equation.testValue) |>
             List.fold
     }
